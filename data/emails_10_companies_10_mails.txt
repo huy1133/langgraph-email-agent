@@ -1,0 +1,312 @@
+# Dữ liệu mẫu: 10 công ty × 10 email (tiếng Việt, nội dung hư cấu để test RAG/ingest).
+# Encoding: UTF-8
+
+<<<CLIENT_ID:alpha_tech>>>
+Subject: Xin chào và giới thiệu dịch vụ
+Kính gửi Phòng Kỹ thuật Công ty Alpha Tech, chúng tôi là đơn vị cung cấp giải pháp bảo mật endpoint. Em xin gửi profile năng lực và case study ngành sản xuất.
+
+Subject: Re: Lịch demo tuần tới
+Anh/chị cho em xác nhận slot 14:00 thứ Tư được không ạ? Team em sẽ demo bản PoC trên môi trường ảo.
+
+Subject: Báo giá gói Enterprise Q2
+Theo nhu cầu 500 máy trạm, báo giá tạm tính như file đính kèm (tham khảo). Giá chốt sau khi khảo sát hiện trạng AD và patch level.
+
+Subject: Cập nhật SLA hỗ trợ
+Gói Enterprise bao gồm hotline 24/7 và RTO cam kết 4h cho sự cố P1. Em gửi lại bảng so sánh gói Standard.
+
+Subject: Yêu cầu thông tin tích hợp SIEM
+Bên em cần syslog format CEF và API webhook để đẩy alert. Nhờ team anh gửi tài liệu kỹ thuật tích hợp.
+
+Subject: Cảm ơn sau buổi workshop
+Cảm ơn anh/chị đã dành thời gian. Em tổng hợp Q&A và checklist triển khai pilot trong thư này.
+
+Subject: Nhắc lịch bàn giao pilot
+Pilot kết thúc 30/06, em đề xuất buổi bàn giao 01/07 10:00. Mong anh/chị xác nhận danh sách tham dự.
+
+Subject: Phản hồi về policy chặn USB
+Theo chính sách mới, cần whitelist thiết bị theo serial. Em cần template CSV import hàng loạt.
+
+Subject: Gia hạn hợp đồng thử nghiệm
+Đề nghị gia hạn pilot thêm 14 ngày để thu đủ số liệu false positive. Em gửi form đề xuất đính kèm.
+
+Subject: Kết thúc pilot — báo cáo tổng kết
+Báo cáo tổng kết pilot đính kèm: giảm 38% cảnh báo nhiễu, 2 gap cần bổ sung trước khi rollout toàn công ty.
+
+<<<CLIENT_ID:beta_logistics>>>
+Subject: Tra cứu đơn hàng BL-88291
+Cho em hỏi trạng thái lô hàng đi Hải Phòng dự kiến cập cảng 12/04. Vui lòng cập nhật ETA và số container.
+
+Subject: Điều chỉnh địa chỉ giao hàng
+Khách yêu cầu đổi điểm giao sang KCN VSIP. Nhờ cập nhật chỉ thị kho và phí nâng hạ nếu phát sinh.
+
+Subject: Khiếu nại hàng hư hộp
+Phát hiện 3 thùng mép va đập. Em đính kèm ảnh và biên bản hiện trường, đề nghị xử lý bồi thường theo điều khoản CMR.
+
+Subject: Đề xuất tối ưu tuyến nội địa
+Sau phân tích volume tuần, em đề xuất gom chuyến HCM–Đà Nẵng 3 lần/tuần thay vì hàng ngày để giảm chi phí.
+
+Subject: Ký nhận chứng từ
+Chứng từ gốc đã gửi chuyển phát nhanh mã EP123456. Nhờ bộ phận kế toán ký nhận và scan bản lưu.
+
+Subject: Thay đổi Incoterms lô xuất EU
+Khách chuyển từ FOB sang CIF. Nhờ team xuất lại báo giá bảo hiểm và cập nhật invoice mẫu.
+
+Subject: Hỏi slot kho lạnh
+Lô thực phẩm đông lạnh cần lưu kho 48h. Vui lòng xác nhận còn pallet slot và nhiệt độ -18°C.
+
+Subject: Đối soát cước tháng 3
+Bảng đối soát cước tháng 3 đính kèm. Có 2 dòng phụ phí cần làm rõ: demurrage và phí siết chặt.
+
+Subject: Kế hoạch peak season Tết
+Dự báo tăng 40% volume tháng 12. Em đề xuất ký hợp đồng khung xe thêm và buffer kho 500 m².
+
+Subject: Cảm ơn hợp tác quý
+Cảm ơn Beta Logistics đã đồng hành quý vừa rồi. Em gửi khảo sát NPS ngắn để cải thiện dịch vụ.
+
+<<<CLIENT_ID:gamma_retail>>>
+Subject: Đặt hàng mùa hè — SKU áo thun
+Đơn đặt 5.000 áo thun 4 màu theo catalog SS24. Nhờ xác nhận MOQ và timeline giao hàng từng lô.
+
+Subject: Trả hàng tồn kho chậm luân chuyển
+Danh sách SKU tồn >90 ngày đính kèm. Đề nghị chương trình markdown hoặc đổi trả theo chính sách hợp đồng.
+
+Subject: Yêu cầu bổ sung quầy POP
+Chi nhánh Aeon Mall cần thêm 10 standee và 2 quầy thử. Deadline setup 20/04.
+
+Subject: Báo cáo sell-out tuần 14
+Sell-out tuần 14 tăng 12% YoY. Top 3 SKU và gợi ý replenish đính kèm.
+
+Subject: Training nhân viên bán hàng
+Đề xuất buổi training online 60 phút về tính năng sản phẩm dòng X. Mong cử 2 đầu mối mỗi miền.
+
+Subject: Khiếu nại barcode quét lỗi
+Một số thùng barcode in mờ gây lỗi POS. Nhờ nhà cung cấng kiểm tra lô sản xuất 03/2026.
+
+Subject: Chương trình khuyến mãi tháng 5
+Đề xuất bundle mua 2 tặng 1 kênh online đồng bộ với cửa hàng. Cần duyệt ngân sách voucher.
+
+Subject: Đổi kế hoạch trưng bày cửa sổ
+Do thi công mall, lùi window display sang tuần 22. Nhờ team visual điều chỉnh timeline.
+
+Subject: Hỏi tồn kho trung tâm phân phối
+Cần snapshot tồn CDC cho 20 SKU bestseller để lên kế hoạch flash sale cuối tuần.
+
+Subject: Hẹn review hợp đồng năm
+Mời họp review điều khoản rebate và độ phủ cửa hàng Q3, đề xuất slot thứ Sáu tuần sau.
+
+<<<CLIENT_ID:delta_construction>>>
+Subject: Xin cấp bản vẽ shop drawing tầng 3
+Nhờ gửi bản vẽ shop drawing MEP tầng 3 bản Revit để bên em tổng hợp BIM coordination.
+
+Subject: Biên bản hiện trường ngày 08/04
+Ghi nhận chậm bàn giao lõi thang máy do thiếu vật tư nhập. Đính kèm ảnh và yêu cầu cập nhật tiến độ.
+
+Subject: Đề xuất đổi vật liệu lan can
+Chủ đầu tư duyệt đổi inox 304 sang kính cường lực 12mm. Nhờ cập nhật BOQ và phê duyệt phát sinh.
+
+Subject: ATLD — toolbox sáng thứ Hai
+Nhắc buổi toolbox 07:00 khu vực đổ bêông mái. Nội dung: dây an toàn và kiểm tra giàn giáo.
+
+Subject: Xin chủ trương làm việc ban đêm
+Để bù tiến độ, đề xuất đổ bê tông khối đếm từ 22:00–04:00. Kèm phương án giảm tiếng ồn và thông báo cư dân.
+
+Subject: Nghiệm thu chống thấm tầng hầm
+Đề nghị lịch nghiệm thu chống thấm với tư vấn giám sát và chủ đầu tư vào 15/04.
+
+Subject: Đơn xin cấp phép đường công vụ
+Hồ sơ xin rào chắn lòng đường phục vụ cẩu cột đã nộp UBND. Nhờ theo dõi số hồ sơ và phản hồi.
+
+Subject: Cập nhật tiến độ cấp thoát nước
+Hoàn thành 80% đường cống ngầm trục B. Còn vướng điểm giao với đơn vị điện ngầm tại mốc B12.
+
+Subject: Yêu cầu bổ sung nhân sự kỹ thuật
+Khu vực finishing cần thêm 4 thợ sơn có chứng chỉ an toàn cao. Đề xuất trong tuần này.
+
+Subject: Họp đối chiếu BOQ tháng
+Mời họp đối chiếu khối lượng tháng và dự báo vật tư thép Q2, gửi agenda kèm file Excel.
+
+<<<CLIENT_ID:epsilon_fintech>>>
+Subject: Đăng ký sandbox API thanh toán
+Công ty Epsilon Fintech xin cấp credential sandbox và tài liệu flow OAuth2 cho ứng dụng ví điện tử.
+
+Subject: Câu hỏi về webhook signature
+Em cần xác nhận thuật toán HMAC và header `X-Signature` phiên bản mới để verify server-side.
+
+Subject: Báo cáo giao dịch test tháng
+Tổng hợp 12.400 giao dịch test, tỷ lệ timeout 0.3%. Đính kèm log mẫu và đề xuất tăng timeout partner bank.
+
+Subject: Yêu cầu whitelist IP production
+Danh sách IP egress production đính kèm. Nhờ whitelist trước ngày go-live 01/05.
+
+Subject: Hỏi chính sách chargeback
+Cần quy trình xử lý chargeback thẻ quốc tế và SLA phản hồi ngân hàng acquire.
+
+Subject: Review bản thảo điều khoản PCI
+Gửi bản draft điều khoản bảo mật dữ liệu thẻ. Nhờ pháp chế đối chiếu với chuẩn nội bộ.
+
+Subject: Tích hợp 3DS2
+Lộ trình bật 3DS2 cho giao dịch >5 triệu. Nhờ xác nhận SDK iOS/Android version tối thiểu.
+
+Subject: Sự cố gián đoạn API 03:12
+Theo monitoring, spike lỗi 503 kéo dài 6 phút. Đề nghị RCA và cam kết preventive action.
+
+Subject: Mở rộng hạn mức giao dịch ngày
+Do chiến dịch marketing, đề nghị tăng soft limit merchant ID 88291 lên 2 tỷ/ngày trong 7 ngày.
+
+Subject: Cảm ơn sau go-live
+Cảm ơn team đã hỗ trợ go-live suôn sẻ. Em gửi checklist vận hành tuần đầu và hotline escalation.
+
+<<<CLIENT_ID:zeta_food>>>
+Subject: Đơn nguyên liệu tuần 16
+Đặt 2 tấn bột mì và 800 kg đường tinh luyện. Nhờ xác nhận COA lô mới và ngày giao.
+
+Subject: Kiểm tra HACCP nhà máy
+Lịch audit nội bộ HACCP dự kiến 18/04. Nhờ bộ phận QA chuẩn bị hồ sơ CCP và biên bản hiệu chuẩn.
+
+Subject: Đổi spec bao bì mới
+Chuyển sang túi zipper có in QR traceability. Nhờ nhà in gửi proof màu và timeline sản xuất.
+
+Subject: Khiếu nại chất lượng lô sốt
+Mẫu sốt lô 04/2026 có độ mặn lệch spec. Đề nghị đổi trả và điều tra dây chuyền đóng gói.
+
+Subject: Xuất khẩu mẫu đi Nhật
+Gửi 20 mẫu SKU kèm chứng nhận Halal và thành phần song ngữ. Deadline courier 17/04.
+
+Subject: Giá nguyên liệu biến động
+Do giá dầu tăng, nhà cung cấp thông báo điều chỉnh +4% phí vận chuyển từ tuần sau.
+
+Subject: Đề xuất công thức giảm đường
+R&D đề xuất giảm 8% đường dòng bánh quy X, cần thử nghiệm cảm quan panel nội bộ.
+
+Subject: Hỏi chứng nhận organic
+Khách B2B yêu cầu chứng nhận organic cho nguyên liệu Y. Nhờ sourcing xác nhận chuỗi cung ứng.
+
+Subject: Kế hoạch production line bảo trì
+Dừng line 2 từ 22:00 thứ Bảy đến 08:00 Chủ nhật để bảo trì định kỳ. Nhờ CS cập nhật ETA giao hàng.
+
+Subject: Họp review doanh số quý
+Mời họp review SKU chậm quay vòng và kế hoạch khuyến mãi kênh modern trade tháng tới.
+
+<<<CLIENT_ID:eta_health>>>
+Subject: Đặt lịch khám tái khám
+Bệnh nhân mã HS-9921 xin lịch tái khám chuyên khoa tim vào sáng thứ Năm tuần sau.
+
+Subject: Gửi kết quả xét nghiệm
+Kết quả sinh hóa và lipid máu đính kèm. Nhờ bác sĩ điều trị xem và điều chỉnh thuốc nếu cần.
+
+Subject: Yêu cầu bổ sung hồ sơ BHYT
+Thiếu giấy chuyển tuyến cho đợt điều trị vừa rồi. Nhờ người nhà bổ sung trong 48h để làm thanh toán.
+
+Subject: Nhắc lịch tiêm vaccine
+Trung tâm nhắc lịch tiêm nhắc mũi cúm theo hẹn 25/04. Vui lòng mang thẻ tiêm và CCCD.
+
+Subject: Hỏi tư vấn dinh dưỡng sau mổ
+Gia đình xin tư vấn chế độ ăn ít natri cho bệnh nhân sau mổ dạ dày, đã xuất viện 5 ngày.
+
+Subject: Phản ánh thời gian chờ cấp cứu
+Gia đình phản ánh chờ tiếp nhận 45 phút tối 07/04. Đề nghị bệnh viện phản hồi và cải thiện quy trình.
+
+Subject: Xin cấp sao y bệnh án
+Đề nghị cấp bản sao y bệnh án đợt nội trú tháng 3 cho mục đích bảo hiểm, kèm công văn đề nghị.
+
+Subject: Đăng ký gói tầm soát ung thư
+Công ty ETA Health đăng ký 80 suất tầm soát cho nhân viên, nhờ gửi gói và chiết khấu khối lượng.
+
+Subject: Cập nhật danh bạ bác sĩ trực
+Vui lòng cập nhật lịch trực ngoại giờ tuần này lên portal nội bộ để trực ban điều phối.
+
+Subject: Cảm ơn sau đợt khám sức khỏe doanh nghiệp
+Cảm ơn đội ngũ y tế đã phối hợp tổ chức khám. Gửi khảo sát hài lòng ngắn cho nhân viên.
+
+<<<CLIENT_ID:theta_edu>>>
+Subject: Đăng ký khóa học Python cho doanh nghiệp
+Trung tâm Theta Edu xin báo giá khóa Python cơ bản 24 giờ cho 25 học viên, có chứng nhận hoàn thành.
+
+Subject: Xin hoãn buổi học ngày mai
+Giảng viên bị sốt, đề xuất dời buổi Data Analysis sang cùng giờ thứ Sáu. Nhờ lớp trưởng thông báo lớp.
+
+Subject: Gửi đề cương và slide tuần 4
+Đề cương và slide bài Machine Learning tuần 4 đính kèm. Deadline bài tập: trước 23:00 Chủ nhật.
+
+Subject: Hỏi học bổng nhân viên
+Nhân viên có 1 năm làm việc có được ưu đãi học phí khóa chứng chỉ AWS không ạ?
+
+Subject: Phản ánh phòng lab máy chậm
+Một số máy lab 3 khởi động chậm, ảnh hưởng thực hành. Nhờ IT kiểm tra SSD và image.
+
+Subject: Đề xuất workshop kỹ năng mềm
+Kế hoạch workshop giao tiếp và thuyết trình 3h cho khóa quản lý cấp trung vào cuối tháng.
+
+Subject: Xin cấp lại chứng chỉ
+Học viên làm mất chứng chỉ khóa Agile tháng 11. Đề nghị cấp lại bản điện tử có mã xác thực.
+
+Subject: Đăng ký thi chứng chỉ quốc tế
+Nhóm 12 người đăng ký slot thi Pearson VUE tháng 6. Nhờ phòng đào tạo xác nhận voucher và lịch.
+
+Subject: Góp ý nội dung khóa Scrum
+Đề xuất thêm 2 case study ngành sản xuất vào module retrospective để sát thực tế hơn.
+
+Subject: Cảm ơn phản hồi khảo sát
+Cảm ơn học viên đã điền khảo sát. Kết quả tổng hợp NPS và hành động cải thiện đính kèm.
+
+<<<CLIENT_ID:iota_mfg>>>
+Subject: PO-2026-044 — linh kiện SMT
+Đặt 200k resistor 0605 và 150k tụ ceramic theo BOM rev C. Nhờ xác nhận lead time và lô date code.
+
+Subject: Kiểm tra chất lượng lô PCB
+IQC phát hiện vết ố trên 3% panel lô 8821. Đề nghị nhà cung cấp 8D và sorting trước khi nhận.
+
+Subject: Lịch bảo trì máy pick-place
+Dừng line SMT-2 6 tiếng để hiệu chuẩn camera và nozzle. Nhờ kế hoạch sản xuất điều chỉnh WO.
+
+Subject: Yêu cầu ESD audit nhà cung cấp
+Theo quy định mới, vật tư nhạy cảm cần audit ESD hàng năm. Nhờ lịch audit và checklist.
+
+Subject: Báo cáo OEE tuần 15
+OEE line final test đạt 78%, mục tiêu 82%. Nguyên nhân chính: chờ khí nén và đổi line.
+
+Subject: Đề xuất kaizen 5S khu lắp ráp
+Sau gemba walk, đề xuất 5 hạng mục 5S và shadow board dụng cụ. Kèm ảnh before/after mục tiêu.
+
+Subject: Hỏi chứng từ xuất xứ nguyên liệu
+Hải quan yêu cầu CO cho lô chip nhập khẩu. Nhờ gửi CO và invoice gốc trong 2 ngày làm việc.
+
+Subject: Thay đổi routing sản xuất
+Do thiếu chip A, tạm thời routing qua board thay thế Rev D. Nhờ IE cập nhật SOP và test plan.
+
+Subject: Họp NPI sản phẩm mới
+Mời họp NPI model Z100: timeline EVT/DVT/PVT và rủi ro tooling khuôn nhựa.
+
+Subject: Cảm ơn hỗ trợ downtime
+Cảm ơn vendor đã hỗ trợ thay thế servo trong ca đêm. Em gửi biên bản sự cố và lesson learned.
+
+<<<CLIENT_ID:kappa_energy>>>
+Subject: Đề xuất khảo sát hiện trạng tiêu thụ điện
+Kappa Energy xin lịch khảo sát nhà máy để lập phương án lắp biến tần và tối ưu HVAC.
+
+Subject: Báo cáo sản lượng điện mặt trời tháng
+Hệ thống rooftop 500kWp sản lượng tháng 3 đạt 98% kế hoạch. Đính kèm biểu đồ và downtime inverter.
+
+Subject: Xin chủ trương bảo trì định kỳ
+Đề xuất bảo trì định kỳ string inverter vào 28–29/04. Cần cắt điện tổng 4h, kèm thông báo nội bộ.
+
+Subject: Hỏi feed-in tariff mới
+Cần làm rõ cơ chế giá bán lưới sau khi có thông tư mới cho dự án COD năm ngoái.
+
+Subject: Cảnh báo tiêu thụ đỉnh không lường trước
+Hệ thống EMS phát hiện spike 15% so với baseline cùng kỳ. Đề nghị kiểm tra chiller và leak khí nén.
+
+Subject: Đăng ký chứng chỉ carbon footprint
+Công ty muốn tính PCF sản phẩm dòng X theo chuẩn ISO 14067. Nhờ tư vấn phạm vi và data request.
+
+Subject: Thay thế đèn LED khu văn phòng
+Báo giá thay 420 bộ đèn panel LED và hồi ROI dự kiến 18 tháng theo giá điện hiện tại.
+
+Subject: Hợp đồng ESCO giai đoạn 2
+Gửi draft hợp đồng chia sẻ tiết kiệm giai đoạn 2 (chiller và pump). Nhờ pháp chế góp ý điều khoản.
+
+Subject: Sự cố trip ATS hôm qua
+Biên bản sự cố ATS khu điện trung thế: nguyên nhân tạm thời và biện pháp khắc phục đính kèm.
+
+Subject: Lịch đào tạo an toàn điện
+Mời kỹ thuật vận hành tham gia đào tạo LOTO và làm việc gần tủ RMU vào 10/04 buổi sáng.

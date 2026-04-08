@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+env/
+
+# Secrets — không commit key
+.env
+
+# Vector DB local
+chroma_data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dữ liệu thật (chỉ giữ file .example trong git nếu muốn)
+data/emails_mixed.txt
