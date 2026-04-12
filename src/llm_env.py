@@ -30,7 +30,7 @@ def load_llm_env() -> LLMEnv:
       - LLM_CHAT_MODEL: model hội thoại (draft/eval sau này; ingest không dùng)
     """
     key = os.getenv("LLM_API_KEY", "").strip()
-    raw_url = _strip_or_none(os.getenv("BASE_URL"))
+    raw_url = _strip_or_none(os.getenv("LLM_BASE_URL")) or _strip_or_none(os.getenv("BASE_URL"))
     if raw_url and raw_url.endswith("/"):
         raw_url = raw_url.rstrip("/")
     emb = os.getenv("LLM_EMBEDDING_MODEL", "text-embedding-3-small").strip()

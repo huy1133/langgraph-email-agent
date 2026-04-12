@@ -43,54 +43,38 @@ except ImportError as e:
     print("Thiếu thư viện. Chạy: pip install -r requirements.txt", file=sys.stderr)
     raise e
 
-def parse_raw_emails_by_separator(text: str, separator: str = "==========") -> list[str]:
-    """Cắt file thành các chuỗi email thô (raw) dựa vào dấu gạch ngang."""
-    raw_blocks = text.split(separator)
-    valid_blocks = [b.strip() for b in raw_blocks if b.strip()]
-    return valid_blocks
-
 def init_sqlite_db(db_path: Path) -> sqlite3.Connection:
-    """Tạo 3 bảng thực thể Độc lập vào DB nếu chưa có"""
+    """Tạo 1 bảng duy nhất lưu trữ Cả 3 thông tin"""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    # 1. Bảng Khách hàng
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS customers (
+        CREATE TABLE IF NOT EXISTS contacts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE
-        )
-    """)
-    # 2. Bảng Công ty
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS companies (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE
-        )
-    """)
-    # 3. Bảng Ngành nghề
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS industries (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE
+            name TEXT,
+            company TEXT,
+            industry TEXT,
+            UNIQUE(name, company, industry)
         )
     """)
     conn.commit()
     return conn
 
-def extract_metadata_via_llm(raw_text: str, env) -> Optional[Dict[str, Any]]:
-    """Dùng LLM để rút trích metadata: name, company, industry, goal, tone."""
+def extract_emails_via_llm(raw_text: str, env) -> list[Dict[str, Any]]:
+    """Dùng LLM để rút trích danh sách email/metadata từ văn bản thô."""
     client = openai.Client(api_key=env.api_key, base_url=env.base_url)
     
     system_prompt = '''Bạn là một trợ lý phân tích dữ liệu email.
-    Trích xuất thông tin dưới dạng JSON từ đoạn nội dung, mail, hoặc ghi chú của người dùng.
-    Luôn trả về cấu trúc JSON sau (lưu ý không để thẻ markdown định dạng JSON bên ngoài):
-    {
-    "name": "Tên khách hàng hoặc tên người (nếu có, không thì 'Unknown')",
-    "company": "Tên công ty khách hàng / đối tác (nếu có, không thì 'Unknown')",
-    "industry": "Ngành nghề (nếu có, không thì 'Unknown')",
-    "body": "Nội dung nguyên bản không thay đổi"        
-    }'''
+    Nhiệm vụ của bạn là đọc một đoạn văn bản thô, nhận diện và tách từng email/tin nhắn/ghi chú riêng biệt có trong đó.
+    Trả về một MẢNG JSON (lưu ý không để thẻ markdown định dạng JSON bên ngoài). Mỗi phần tử trong mảng là một dict biểu diễn một email:
+    [
+        {
+            "name": "Tên khách hàng hoặc tên người (nếu có, không thì 'Unknown')",
+            "company": "Tên công ty khách hàng / đối tác (nếu có, không thì 'Unknown')",
+            "industry": "Ngành nghề (nếu có, không thì 'Unknown')",
+            "body": "Nội dung nguyên bản của email đó không thay đổi"
+        }
+    ]'''
 
     try:
         response = client.chat.completions.create(
@@ -99,19 +83,30 @@ def extract_metadata_via_llm(raw_text: str, env) -> Optional[Dict[str, Any]]:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Văn bản raw như sau:\n\n{raw_text}"}
             ],
-            temperature=0.0,
-            response_format={"type": "json_object"}
+            temperature=0.0
         )
-        content = response.choices[0].message.content or "{}"
-        parsed = json.loads(content)
+        content = response.choices[0].message.content or "[]"
+        if content.startswith("```json"):
+            content = content[7:-3]
+        elif content.startswith("```"):
+            content = content[3:-3]
+            
+        parsed = json.loads(content.strip())
+        if not isinstance(parsed, list):
+            if isinstance(parsed, dict):
+                parsed = [parsed]
+            else:
+                parsed = []
+                
         # Fallback 
-        for key in ["name", "company", "industry", "body"]: 
-            if key not in parsed:
-                parsed[key] = "Unknown"
+        for item in parsed:
+            for key in ["name", "company", "industry", "body"]: 
+                if key not in item:
+                    item[key] = "Unknown"
         return parsed
     except Exception as e:
         print(f"Error parsing LLM response: {e}")
-        return None
+        return []
 
 def chunk_by_tokens(
     text: str,
@@ -136,16 +131,87 @@ def stable_chunk_id(chunk_index: int, text: str) -> str:
     h = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
     return f"chk_{chunk_index}_{h}"
 
+def run_ingest_process(raw_text: str, source_name: str, max_tokens: int = 500, collection_name: str = "email_chunks") -> dict:
+    """Xử lý text, trích xuất và lưu vào DB (dùng chung cho Web API và các nguồn khác)."""
+    env = load_llm_env()
+    if not env.api_key:
+        return {"error": "Thiếu LLM_API_KEY ở .env"}
+
+    extracted_emails = extract_emails_via_llm(raw_text, env)
+    if not extracted_emails:
+        return {"error": "Nội dung rỗng hoặc LLM không tìm thấy email nào.", "logs": []}
+
+    sql_db_path = _ROOT / "data" / "customers.db"
+    if not sql_db_path.parent.exists():
+        sql_db_path.parent.mkdir(parents=True)
+    
+    sql_conn = init_sqlite_db(sql_db_path)
+    cursor = sql_conn.cursor()
+
+    all_docs = []
+    all_ids = []
+    all_meta = []
+    chunk_counter = 0
+    logs = []
+    
+    for idx, extracted in enumerate(extracted_emails, 1):
+        c_name = str(extracted.get("name", "Unknown")).strip()
+        c_comp = str(extracted.get("company", "Unknown")).strip()
+        c_indus = str(extracted.get("industry", "Unknown")).strip()
+        
+        cursor.execute("INSERT OR IGNORE INTO contacts (name, company, industry) VALUES (?, ?, ?)", (c_name, c_comp, c_indus))
+        cursor.execute("SELECT id FROM contacts WHERE name=? AND company=? AND industry=?", (c_name, c_comp, c_indus))
+        contact_id = (cursor.fetchone() or [-1])[0]
+        
+        semantic_prefix = (
+            f"Tên khách hàng: {c_name}\nCông ty: {c_comp}\nNgành: {c_indus}\n\nNội dung: "
+        )
+        
+        body = extracted.get("body", "")
+        for chunk_body in chunk_by_tokens(body, max_tokens=max_tokens, overlap=50):
+            full_chunk_text = semantic_prefix + chunk_body
+            cid = stable_chunk_id(chunk_counter, full_chunk_text)
+            all_docs.append(full_chunk_text)
+            all_ids.append(cid)
+            all_meta.append({
+                "contact_id": contact_id,
+                "source_file": source_name
+            })
+            chunk_counter += 1
+            
+        logs.append(f"Email {idx}: Bóc tách thành công [ {c_name} | {c_comp} | {c_indus} ].")
+
+    sql_conn.commit()
+    sql_conn.close()
+
+    if not all_docs:
+        return {"error": "Hoàn tất nhưng không có mảnh vector nào được tạo.", "logs": logs}
+
+    chroma_path = _ROOT / "chroma_data"
+    emb_kwargs = {"api_key": env.api_key, "model_name": env.embedding_model}
+    if env.base_url:
+        emb_kwargs["api_base"] = env.base_url
+        
+    ef = embedding_functions.OpenAIEmbeddingFunction(**emb_kwargs)
+    client = chromadb.PersistentClient(path=str(chroma_path))
+    collection = client.get_or_create_collection(name=collection_name, embedding_function=ef)
+    collection.upsert(documents=all_docs, ids=all_ids, metadatas=all_meta)
+
+    logs.append(f"✅ Hoàn tất lưu Master SQL Data.")
+    logs.append(f"✅ Hoàn tất nạp {len(all_docs)} Vector Chunk vào ChromaDB ({collection_name}).")
+
+    return {"status": "success", "logs": logs, "chunks": len(all_docs)}
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest text hỗn hợp, lưu vào 3 bảng Thực Thể độc lập SQL và Vector Chroma.")
-    parser.add_argument("input_file", type=Path, help="File txt có ngăn cách ==========")
+    parser.add_argument("input_path", type=Path, help="File txt hoặc thư mục chứa các file txt (không cần ngăn cách ==========)")
     parser.add_argument("--collection", default="email_chunks", help="Tên collection Chroma")
     parser.add_argument("--max-tokens", type=int, default=500)
     args = parser.parse_args()
 
-    path = args.input_file.resolve()
-    if not path.is_file():
-        print(f"Không tìm thấy file: {path}", file=sys.stderr)
+    path = args.input_path.resolve()
+    if not path.exists():
+        print(f"Không tìm thấy: {path}", file=sys.stderr)
         sys.exit(1)
 
     env = load_llm_env()
@@ -153,12 +219,15 @@ def main() -> None:
         print("Thiếu LLM_API_KEY.", file=sys.stderr)
         sys.exit(1)
 
-    # Đọc raw template
-    raw = path.read_text(encoding="utf-8", errors="replace")
-    raw_blocks = parse_raw_emails_by_separator(raw)
-    
-    if not raw_blocks:
-        print("File rỗng.", file=sys.stderr)
+    # Lấy danh sách file cần xử lý
+    files_to_process = []
+    if path.is_file():
+        files_to_process.append(path)
+    elif path.is_dir():
+        files_to_process.extend(path.glob('*.txt'))
+
+    if not files_to_process:
+        print("Không có file txt nào để xử lý.", file=sys.stderr)
         sys.exit(1)
 
     # Cài đặt SQL Connection
@@ -171,55 +240,55 @@ def main() -> None:
     all_meta: list[dict] = []
     chunk_counter = 0
 
-    print(f"Bắt đầu xử lý {len(raw_blocks)} blocks qua LLM ({env.chat_model})...")
+    print(f"Bắt đầu xử lý {len(files_to_process)} file qua LLM ({env.chat_model})...")
 
-    for idx, block in enumerate(raw_blocks, 1):
-        print(f" - Xử lý block {idx}/{len(raw_blocks)}...")
-        extracted = extract_metadata_via_llm(block, env)
-        if not extracted:
-            print("   -> Bỏ qua block do LLM lỗi/chặn proxy.")
+    for fpath in files_to_process:
+        print(f"\n- Đang dùng LLM để trích xuất email từ file: {fpath.name}...")
+        raw = fpath.read_text(encoding="utf-8", errors="replace")
+        if not raw.strip():
             continue
             
-        c_name = str(extracted.get("name", "Unknown")).strip()
-        c_comp = str(extracted.get("company", "Unknown")).strip()
-        c_indus = str(extracted.get("industry", "Unknown")).strip()
+        extracted_emails = extract_emails_via_llm(raw, env)
+        if not extracted_emails:
+            print("   -> Bỏ qua file do LLM không tìm thấy email hoặc có lỗi.")
+            continue
+            
+        print(f"   -> LLM tìm thấy {len(extracted_emails)} email trong file này.")
         
-        # INSERT OR IGNORE cho Khách hàng
-        cursor.execute("INSERT OR IGNORE INTO customers (name) VALUES (?)", (c_name,))
-        cursor.execute("SELECT id FROM customers WHERE name=?", (c_name,))
-        customer_id = (cursor.fetchone() or [-1])[0]
-
-        # INSERT OR IGNORE cho Công ty
-        cursor.execute("INSERT OR IGNORE INTO companies (name) VALUES (?)", (c_comp,))
-        cursor.execute("SELECT id FROM companies WHERE name=?", (c_comp,))
-        company_id = (cursor.fetchone() or [-1])[0]
-
-        # INSERT OR IGNORE cho Ngành nghề
-        cursor.execute("INSERT OR IGNORE INTO industries (name) VALUES (?)", (c_indus,))
-        cursor.execute("SELECT id FROM industries WHERE name=?", (c_indus,))
-        industry_id = (cursor.fetchone() or [-1])[0]
+        # Ghi log kết quả JSON từ LLM ra file trước khi insert DB
+        log_file = fpath.parent / f"llm_log_{fpath.name}.json"
+        with open(log_file, "w", encoding="utf-8") as f:
+            json.dump(extracted_emails, f, ensure_ascii=False, indent=4)
+        print(f"   -> Đã ghi log kết quả chuẩn JSON ra file: {log_file}")
         
-        # Bọc Tiền Tố vào nội dung Chunk Vector 
-        semantic_prefix = (
-            f"Tên khách hàng: {c_name}\nCông ty: {c_comp}\nNgành: {c_indus}\n"
-            f"\n\nNội dung: "
-        )
-        
-        # Thêm Vector vào Vector DB
-        body = extracted.get("body", "")
-        for local_i, chunk_body in enumerate(chunk_by_tokens(body, max_tokens=args.max_tokens, overlap=50)):
-            full_chunk_text = semantic_prefix + chunk_body
-            cid = stable_chunk_id(chunk_counter, full_chunk_text)
-            all_docs.append(full_chunk_text)
-            all_ids.append(cid)
-            # Link độc lập tới 3 bảng SQL bên ngoài
-            all_meta.append({
-                "customer_id": customer_id, 
-                "company_id": company_id,
-                "industry_id": industry_id,
-                "source_file": str(path.name)
-            })
-            chunk_counter += 1
+        for idx, extracted in enumerate(extracted_emails, 1):
+            c_name = str(extracted.get("name", "Unknown")).strip()
+            c_comp = str(extracted.get("company", "Unknown")).strip()
+            c_indus = str(extracted.get("industry", "Unknown")).strip()
+            
+            cursor.execute("INSERT OR IGNORE INTO contacts (name, company, industry) VALUES (?, ?, ?)", (c_name, c_comp, c_indus))
+            cursor.execute("SELECT id FROM contacts WHERE name=? AND company=? AND industry=?", (c_name, c_comp, c_indus))
+            contact_id = (cursor.fetchone() or [-1])[0]
+            
+            # Bọc Tiền Tố vào nội dung Chunk Vector 
+            semantic_prefix = (
+                f"Tên khách hàng: {c_name}\nCông ty: {c_comp}\nNgành: {c_indus}\n"
+                f"\n\nNội dung: "
+            )
+            
+            # Thêm Vector vào Vector DB
+            body = extracted.get("body", "")
+            for local_i, chunk_body in enumerate(chunk_by_tokens(body, max_tokens=args.max_tokens, overlap=50)):
+                full_chunk_text = semantic_prefix + chunk_body
+                cid = stable_chunk_id(chunk_counter, full_chunk_text)
+                all_docs.append(full_chunk_text)
+                all_ids.append(cid)
+                # Link độc lập tới bảng SQL bên ngoài
+                all_meta.append({
+                    "contact_id": contact_id,
+                    "source_file": str(fpath.name)
+                })
+                chunk_counter += 1
 
     sql_conn.commit()
     sql_conn.close()
@@ -240,9 +309,9 @@ def main() -> None:
     collection = client.get_or_create_collection(name=args.collection, embedding_function=ef)
     collection.upsert(documents=all_docs, ids=all_ids, metadatas=all_meta)
 
-    print(f"\nThành công! Đã tách dữ liệu 3 bảng 3 ngã:")
+    print(f"\nThành công! Đã tách dữ liệu vào 1 bảng:")
     print(f" -> SQL Thực thể Master: {sql_db_path}")
-    print(f" -> Vector Chroma: {len(all_docs)} đoạn chứa 3 Khóa Ngoại ForeignKey")
+    print(f" -> Vector Chroma: {len(all_docs)} đoạn chứa Khóa Ngoại contact_id")
 
 if __name__ == "__main__":
     main()

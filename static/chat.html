@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MailMind AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+        };
+        // FOUC prevention script
+        if (localStorage.getItem('theme') === 'dark' || (!("theme" in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d4d4d8;
+            border-radius: 10px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+        }
+
+        .typing-dot {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background: #a1a1aa;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dark .typing-dot {
+            background: #71717a;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body
+    class="font-sans antialiased flex h-screen overflow-hidden selection:bg-zinc-200 dark:selection:bg-zinc-800 bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+
+    <!-- Left Sidebar Navigation -->
+    <aside
+        class="w-64 border-r border-zinc-200 dark:border-zinc-800/60 bg-zinc-50 dark:bg-[#09090b] shrink-0 flex flex-col items-stretch transition-colors duration-300">
+        <div class="h-14 flex items-center px-6 border-b border-zinc-200 dark:border-zinc-800/60">
+            <span class="font-medium text-zinc-900 dark:text-zinc-100 text-[13px] flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-zinc-400 dark:bg-white"></div>
+                MailMind AI
+            </span>
+        </div>
+
+        <div class="p-4 flex flex-col gap-1 items-stretch">
+            <p class="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest px-2 mb-2">Menu</p>
+
+            <a href="/"
+                class="flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"></path>
+                </svg>
+                Agent Console
+            </a>
+
+            <a href="/ingest"
+                class="flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z">
+                    </path>
+                </svg>
+                Context & Data
+            </a>
+        </div>
+
+        <div class="mt-auto p-6 text-xs text-zinc-500 dark:text-zinc-600">
+            LLM: <span class="text-zinc-700 dark:text-zinc-400">gemini-3-flash</span><br>
+            DB: <span class="text-zinc-700 dark:text-zinc-400">Chroma Vector</span>
+        </div>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="flex-1 flex flex-col h-full relative">
+        <!-- Top header area for context -->
+        <header
+            class="h-14 border-b border-zinc-200 dark:border-zinc-800/60 flex items-center justify-between px-6 shrink-0 transition-colors">
+            <span class="font-medium text-zinc-900 dark:text-zinc-100 text-[13px]">Workspace / Chat</span>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleTheme()"
+                    class="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition p-1.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 outline-none"
+                    title="Toggle Theme">
+                    <!-- Sun Icon (Visible in Dark Mode) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                        class="hidden dark:block">
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <path d="M12 2v2"></path>
+                        <path d="M12 20v2"></path>
+                        <path d="m4.93 4.93 1.41 1.41"></path>
+                        <path d="m17.66 17.66 1.41 1.41"></path>
+                        <path d="M2 12h2"></path>
+                        <path d="M20 12h2"></path>
+                        <path d="m6.34 17.66-1.41 1.41"></path>
+                        <path d="m19.07 4.93-1.41 1.41"></path>
+                    </svg>
+                    <!-- Moon Icon (Visible in Light Mode) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                        class="block dark:hidden">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                    </svg>
+                </button>
+                <button class="text-[12px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 transition"
+                    onclick="clearChat()">Clear chat</button>
+            </div>
+        </header>
+
+        <!-- Chat Area -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar max-w-4xl mx-auto w-full" id="chatMessages">
+            <div class="flex flex-col items-start mb-2 mt-4">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[11px] font-semibold text-zinc-500">SYSTEM AI</span>
+                </div>
+                <div
+                    class="text-[13px] text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 rounded-xl rounded-tl-sm px-4 py-3 max-w-[85%] leading-relaxed shadow-sm dark:shadow-none">
+                    System initialized. How can I help you extract or synthesize information from the Vector store?
+                </div>
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="px-6 pb-2 hidden shrink-0 max-w-4xl mx-auto w-full">
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-semibold text-zinc-500">SYSTEM AI</span>
+            </div>
+            <div
+                class="bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 px-4 py-3 rounded-xl rounded-tl-sm inline-flex items-center mt-1">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+
+        <!-- Input Box -->
+        <div class="p-4 sm:p-6 shrink-0 mb-4 max-w-4xl mx-auto w-full border-t border-transparent">
+            <!-- Contact Context Form -->
+            <div id="contactFormArea"
+                class="mb-4 flex flex-wrap gap-3 p-3 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl transition-all duration-300">
+                <div class="flex-1 min-w-[200px] relative">
+                    <label class="block text-[11px] font-semibold text-zinc-500 mb-1 uppercase tracking-wider">Người
+                        nhận (Name)</label>
+                    <div class="flex gap-2 relative">
+                        <select id="contactSelect" onchange="onContactChange()"
+                            class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-[13px] text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors">
+                            <option value="">-- Chọn khách hàng --</option>
+                            <option value="other">Khác</option>
+                        </select>
+                        <input type="text" id="nameInput" placeholder="Nhập tên người nhận..."
+                            class="hidden w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[13px] text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors">
+                        <button id="cancelOtherBtn" onclick="cancelOther()"
+                            class="hidden text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 px-2 transition"
+                            title="Hủy nhập tay">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-[150px] relative">
+                    <label class="block text-[11px] font-semibold text-zinc-500 mb-1 uppercase tracking-wider">Công ty
+                        (Auto)</label>
+                    <div class="flex gap-2 relative">
+                        <select id="companySelect" onchange="onCompanyChange()"
+                            class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-[13px] text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors">
+                            <option value="">-- Chọn công ty --</option>
+                            <option value="other">Khác</option>
+                        </select>
+                        <input type="text" id="companyInput" placeholder="Nhập công ty..."
+                            class="hidden w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[13px] text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors">
+                        <button id="cancelCompanyBtn" onclick="cancelCompany()"
+                            class="hidden text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 px-2 transition"
+                            title="Hủy nhập tay">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-[150px] relative">
+                    <label class="block text-[11px] font-semibold text-zinc-500 mb-1 uppercase tracking-wider">Ngành
+                        (Auto)</label>
+                    <div class="flex gap-2 relative">
+                        <select id="industrySelect" onchange="onIndustryChange()"
+                            class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-[13px] text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors">
+                            <option value="">-- Chọn ngành --</option>
+                            <option value="other">Khác</option>
+                        </select>
+                        <input type="text" id="industryInput" placeholder="Nhập ngành..."
+                            class="hidden w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[13px] text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors">
+                        <button id="cancelIndustryBtn" onclick="cancelIndustry()"
+                            class="hidden text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 px-2 transition"
+                            title="Hủy nhập tay">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Persistent Options: Mục tiêu & Giọng điệu -->
+            <div class="mb-3 flex flex-wrap gap-3">
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-wider">Mục tiêu</label>
+                    <div class="flex gap-2">
+                        <select id="emailObjective" onchange="onObjectiveChange()"
+                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[12px] text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors">
+                            <option value="">-- Tùy theo nội dung --</option>
+                            <option value="Giới thiệu sản phẩm / dịch vụ">Giới thiệu sản phẩm</option>
+                            <option value="Follow-up sau cuộc gặp">Follow-up sau cuộc gặp</option>
+                            <option value="Chốt hợp đồng / thúc đẩy quyết định">Chốt hợp đồng</option>
+                            <option value="Cảm ơn và duy trì quan hệ">Cảm ơn / Duy trì quan hệ</option>
+                            <option value="Nhắc nhở lịch hẹn hoặc deadline">Nhắc lịch / Deadline</option>
+                            <option value="Gửi báo giá">Gửi báo giá</option>
+                            <option value="Xử lý khiếu nại / hỗ trợ khách hàng">Xử lý khiếu nại</option>
+                            <option value="other">Khác...</option>
+                        </select>
+                        <input type="text" id="emailObjectiveInput" placeholder="Nhập mục tiêu..."
+                            class="hidden w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[12px] text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors">
+                        <button id="cancelObjectiveBtn" onclick="cancelObjective()" title="Hủy"
+                            class="hidden shrink-0 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 px-1.5 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-wider">Giọng điệu</label>
+                    <div class="flex gap-2">
+                        <select id="emailTone" onchange="onToneChange()"
+                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[12px] text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors">
+                            <option value="">-- Tự nhiên --</option>
+                            <option value="Chuyên nghiệp và trang trọng">Chuyên nghiệp</option>
+                            <option value="Thân thiện và gần gũi">Thân thiện</option>
+                            <option value="Ngắn gọn và súc tích">Ngắn gọn</option>
+                            <option value="Thuyết phục và mạnh mẽ">Thuyết phục</option>
+                            <option value="Nhiệt tình và năng động">Nhiệt tình</option>
+                            <option value="Cẩn thận và lịch sự">Cẩn thận / Lịch sự</option>
+                            <option value="other">Khác...</option>
+                        </select>
+                        <input type="text" id="emailToneInput" placeholder="Nhập giọng điệu..."
+                            class="hidden w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[12px] text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors">
+                        <button id="cancelToneBtn" onclick="cancelTone()" title="Hủy"
+                            class="hidden shrink-0 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 px-1.5 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <form onsubmit="sendChat(event)" class="relative flex items-center">
+                <input type="text" id="chatInput" placeholder="Ask the LLM directly..."
+                    class="w-full bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-4 pr-12 py-3 text-[13px] text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500 transition-colors shadow-sm dark:shadow-none placeholder-zinc-400 dark:placeholder-zinc-600"
+                    autocomplete="off">
+                <button type="submit"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        let globalContacts = [];
+        let conversationHistory = []; // [{role: "user", content:"..."}, {role: "assistant", content:"..."}]
+
+        async function loadContacts() {
+            try {
+                const res = await fetch('/api/contacts');
+                const data = await res.json();
+                globalContacts = data;
+
+                const select = document.getElementById('contactSelect');
+                const compSelect = document.getElementById('companySelect');
+                const indSelect = document.getElementById('industrySelect');
+
+                const companies = new Set();
+                const industries = new Set();
+
+                data.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    select.insertBefore(opt, select.lastElementChild);
+
+                    if (c.company && c.company !== "Unknown") companies.add(c.company);
+                    if (c.industry && c.industry !== "Unknown") industries.add(c.industry);
+                });
+
+                Array.from(companies).sort().forEach(company => {
+                    const opt = document.createElement('option');
+                    opt.value = company;
+                    opt.textContent = company;
+                    compSelect.insertBefore(opt, compSelect.lastElementChild);
+                });
+
+                Array.from(industries).sort().forEach(industry => {
+                    const opt = document.createElement('option');
+                    opt.value = industry;
+                    opt.textContent = industry;
+                    indSelect.insertBefore(opt, indSelect.lastElementChild);
+                });
+            } catch (e) {
+                console.error("Failed to load contacts", e);
+            }
+        }
+
+        function onContactChange() {
+            const select = document.getElementById('contactSelect');
+            const val = select.value;
+            const nameInp = document.getElementById('nameInput');
+            const cancelBtn = document.getElementById('cancelOtherBtn');
+
+            const compSel = document.getElementById('companySelect');
+            const indSel = document.getElementById('industrySelect');
+
+            if (val === "other") {
+                select.classList.add('hidden');
+                nameInp.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+
+                nameInp.value = '';
+                nameInp.focus();
+
+                cancelCompany();
+                cancelIndustry();
+                return;
+            }
+
+            if (!val) {
+                cancelCompany();
+                cancelIndustry();
+                return;
+            }
+
+            const contact = globalContacts.find(c => c.id == val);
+            if (contact) {
+                cancelCompany();
+                cancelIndustry();
+
+                const cComp = contact.company !== "Unknown" ? contact.company : "";
+                const cInd = contact.industry !== "Unknown" ? contact.industry : "";
+
+                compSel.value = cComp;
+                if (cComp && !compSel.value) { // If option isn't in dropdown
+                    compSel.value = "other";
+                    onCompanyChange();
+                    document.getElementById('companyInput').value = cComp;
+                }
+
+                indSel.value = cInd;
+                if (cInd && !indSel.value) {
+                    indSel.value = "other";
+                    onIndustryChange();
+                    document.getElementById('industryInput').value = cInd;
+                }
+            }
+        }
+
+        function cancelOther() {
+            const select = document.getElementById('contactSelect');
+            const nameInp = document.getElementById('nameInput');
+            const cancelBtn = document.getElementById('cancelOtherBtn');
+
+            select.classList.remove('hidden');
+            nameInp.classList.add('hidden');
+            cancelBtn.classList.add('hidden');
+            select.value = "";
+            nameInp.value = '';
+
+            cancelCompany();
+            cancelIndustry();
+        }
+
+        function onCompanyChange() {
+            const select = document.getElementById('companySelect');
+            const inp = document.getElementById('companyInput');
+            const cancelBtn = document.getElementById('cancelCompanyBtn');
+            if (select.value === "other") {
+                select.classList.add('hidden');
+                inp.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+                inp.value = '';
+                inp.focus();
+            }
+        }
+
+        function cancelCompany() {
+            const select = document.getElementById('companySelect');
+            const inp = document.getElementById('companyInput');
+            const cancelBtn = document.getElementById('cancelCompanyBtn');
+
+            select.classList.remove('hidden');
+            inp.classList.add('hidden');
+            cancelBtn.classList.add('hidden');
+            select.value = "";
+            inp.value = '';
+        }
+
+        function onIndustryChange() {
+            const select = document.getElementById('industrySelect');
+            const inp = document.getElementById('industryInput');
+            const cancelBtn = document.getElementById('cancelIndustryBtn');
+            if (select.value === "other") {
+                select.classList.add('hidden');
+                inp.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+                inp.value = '';
+                inp.focus();
+            }
+        }
+
+        function cancelIndustry() {
+            const select = document.getElementById('industrySelect');
+            const inp = document.getElementById('industryInput');
+            const cancelBtn = document.getElementById('cancelIndustryBtn');
+
+            select.classList.remove('hidden');
+            inp.classList.add('hidden');
+            cancelBtn.classList.add('hidden');
+            select.value = "";
+            inp.value = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadContacts);
+
+        function onObjectiveChange() {
+            const sel = document.getElementById('emailObjective');
+            const inp = document.getElementById('emailObjectiveInput');
+            const btn = document.getElementById('cancelObjectiveBtn');
+            if (sel.value === 'other') {
+                sel.classList.add('hidden');
+                inp.classList.remove('hidden');
+                btn.classList.remove('hidden');
+                inp.value = '';
+                inp.focus();
+            }
+        }
+
+        function cancelObjective() {
+            const sel = document.getElementById('emailObjective');
+            const inp = document.getElementById('emailObjectiveInput');
+            const btn = document.getElementById('cancelObjectiveBtn');
+            sel.classList.remove('hidden');
+            inp.classList.add('hidden');
+            btn.classList.add('hidden');
+            sel.value = '';
+            inp.value = '';
+        }
+
+        function onToneChange() {
+            const sel = document.getElementById('emailTone');
+            const inp = document.getElementById('emailToneInput');
+            const btn = document.getElementById('cancelToneBtn');
+            if (sel.value === 'other') {
+                sel.classList.add('hidden');
+                inp.classList.remove('hidden');
+                btn.classList.remove('hidden');
+                inp.value = '';
+                inp.focus();
+            }
+        }
+
+        function cancelTone() {
+            const sel = document.getElementById('emailTone');
+            const inp = document.getElementById('emailToneInput');
+            const btn = document.getElementById('cancelToneBtn');
+            sel.classList.remove('hidden');
+            inp.classList.add('hidden');
+            btn.classList.add('hidden');
+            sel.value = '';
+            inp.value = '';
+        }
+
+        function fillChat(text) {
+            document.getElementById('chatInput').value = text;
+            document.getElementById('chatInput').focus();
+        }
+
+        async function sendChat(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const contactSel = document.getElementById('contactSelect');
+            let contact_id = -1;
+            let finalName = '';
+            if (contactSel.value === "other" || !contactSel.value) {
+                finalName = document.getElementById('nameInput').value.trim() || 'Unknown';
+            } else {
+                contact_id = parseInt(contactSel.value);
+                finalName = contactSel.options[contactSel.selectedIndex].text;
+            }
+
+            const compSel = document.getElementById('companySelect');
+            let finalCompany = (compSel.value === "other" || !compSel.value) 
+                ? (document.getElementById('companyInput').value.trim() || 'Unknown') 
+                : compSel.value;
+
+            const indSel = document.getElementById('industrySelect');
+            let finalIndustry = (indSel.value === "other" || !indSel.value) 
+                ? (document.getElementById('industryInput').value.trim() || 'Unknown') 
+                : indSel.value;
+
+            const formArea = document.getElementById('contactFormArea');
+            if (formArea && !formArea.classList.contains('hidden')) {
+                formArea.classList.add('hidden');
+            }
+
+            const contextHtml = `Gửi email cho: <strong class="text-zinc-700 dark:text-zinc-300">${finalName}</strong> (${finalCompany} - ${finalIndustry})`;
+            appendUserMsg(text, contextHtml);
+            input.value = '';
+
+            const indicator = document.getElementById('typingIndicator');
+            indicator.classList.remove('hidden');
+            
+            input.disabled = true;
+            submitBtn.disabled = true;
+            submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+            
+            scrollToChatBottom();
+
+            try {
+                const response = await fetch('/api/generate_draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contact_id: contact_id,
+                        name: finalName,
+                        company: finalCompany,
+                        industry: finalIndustry,
+                        goal: text,
+                        objective: (document.getElementById('emailObjective').classList.contains('hidden')
+                            ? document.getElementById('emailObjectiveInput').value.trim()
+                            : document.getElementById('emailObjective').value),
+                        tone: (document.getElementById('emailTone').classList.contains('hidden')
+                            ? document.getElementById('emailToneInput').value.trim()
+                            : document.getElementById('emailTone').value),
+                        chat_history: conversationHistory.slice(-8)
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    appendAIMsg("Lỗi: " + data.error);
+                } else {
+                    appendDraftMsg(data, {
+                        contact_id: contact_id,
+                        name: finalName,
+                        company: finalCompany,
+                        industry: finalIndustry
+                    });
+
+                    // Lưu vào bộ nhớ hội thoại
+                    conversationHistory.push({ role: "user", content: text });
+                    conversationHistory.push({ role: "assistant", content: data.draft });
+                }
+            } catch (err) {
+                appendAIMsg("Lỗi hệ thống liên kết AI: " + err.message);
+            } finally {
+                indicator.classList.add('hidden');
+                input.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+                input.focus();
+                scrollToChatBottom();
+            }
+        }
+
+        function appendUserMsg(text, contextHtml = null) {
+            const chatBox = document.getElementById('chatMessages');
+            let contextDiv = '';
+            if (contextHtml) {
+                contextDiv = `
+                    <div class="mb-2 text-[11px] text-zinc-500 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-1.5 flex items-center gap-2 shadow-sm dark:shadow-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span>${contextHtml}</span>
+                    </div>
+                `;
+            }
+
+            const html = `
+                <div class="flex flex-col items-end mb-4 mt-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[11px] font-medium text-zinc-500">YOU</span>
+                    </div>
+                    ${contextDiv}
+                    <div class="text-[13px] bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-950 px-4 py-3 rounded-xl rounded-tr-sm max-w-[85%] leading-relaxed shadow-sm dark:shadow-none">
+                        ${text}
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', html);
+            scrollToChatBottom();
+        }
+
+        function appendAIMsg(text) {
+            const chatBox = document.getElementById('chatMessages');
+            const html = `
+                <div class="flex flex-col items-start mb-4 mt-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[11px] font-semibold text-zinc-500">SYSTEM AI</span>
+                    </div>
+                    <div class="text-[13px] text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 px-4 py-3 rounded-xl rounded-tl-sm max-w-[85%] leading-relaxed shadow-sm dark:shadow-none">
+                        ${text}
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', html);
+            scrollToChatBottom();
+        }
+
+        function appendDraftMsg(data, contactInfo) {
+            const chatBox = document.getElementById('chatMessages');
+            const draftHtml = data.draft.replace(/\n/g, '<br>');
+            const msgId = 'draft_' + Date.now();
+
+            let feedbackBadge = '';
+            if (data.feedback && data.feedback.trim() !== '') {
+                feedbackBadge = `<div class="mt-3 text-[11.5px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1.5 rounded-md">Lưu ý kiểm duyệt: ${data.feedback}</div>`;
+            }
+
+            // Mã hóa draft để truyền qua data attribute an toàn
+            const draftEncoded = btoa(unescape(encodeURIComponent(data.draft)));
+            const contactEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(contactInfo))));
+
+            const html = `
+                <div class="flex flex-col items-start mb-4 mt-4" id="${msgId}">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[11px] font-semibold text-zinc-500">SYSTEM AI</span>
+                        <span class="text-[10px] text-zinc-400">${data.iterations} vòng tối ưu</span>
+                    </div>
+                    <div class="text-[13px] text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 px-4 py-3 rounded-xl rounded-tl-sm max-w-[85%] leading-relaxed shadow-sm dark:shadow-none">
+                        <div class="font-medium border-b border-zinc-200 dark:border-zinc-800/80 pb-2 mb-3 text-zinc-900 dark:text-zinc-100">✨ Bản nháp Email:</div>
+                        <div>${draftHtml}</div>
+                        ${feedbackBadge}
+                        <div class="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800/60">
+                            <button
+                                id="save_btn_${msgId}"
+                                data-draft="${draftEncoded}"
+                                data-contact="${contactEncoded}"
+                                onclick="saveToKnowledge(this, '${msgId}')"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                                Lưu vào Tri thức
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', html);
+            scrollToChatBottom();
+        }
+
+        async function saveToKnowledge(btn, msgId) {
+            const draftEncoded = btn.getAttribute('data-draft');
+            const contactEncoded = btn.getAttribute('data-contact');
+
+            const draft = decodeURIComponent(escape(atob(draftEncoded)));
+            const contactInfo = JSON.parse(decodeURIComponent(escape(atob(contactEncoded))));
+
+            // Trạng thái đang lưu
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                Đang lưu...
+            `;
+
+            try {
+                const res = await fetch('/api/save_to_knowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        draft: draft,
+                        contact_id: contactInfo.contact_id,
+                        name: contactInfo.name,
+                        company: contactInfo.company,
+                        industry: contactInfo.industry
+                    })
+                });
+                const result = await res.json();
+
+                if (result.status === 'success') {
+                    btn.className = btn.className.replace(/border-zinc-300.*?transition-all duration-200/, 'border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 cursor-default');
+                    btn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Đã lưu vào Tri thức!
+                    `;
+                    btn.disabled = true;
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = `⚠ Lỗi lưu, thử lại`;
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = `⚠ Lỗi kết nối`;
+            }
+        }
+
+        function scrollToChatBottom() {
+            const chatBox = document.getElementById('chatMessages');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function clearChat() {
+            // Xóa nội dung chat trên màn hình
+            document.getElementById('chatMessages').innerHTML = '';
+
+            // Reset bộ nhớ hội thoại AI
+            conversationHistory = [];
+
+            // Hiển thị lại form chọn khách hàng
+            const formArea = document.getElementById('contactFormArea');
+            if (formArea) formArea.classList.remove('hidden');
+
+            // Reset form khách hàng về trạng thái ban đầu
+            cancelOther();
+            cancelCompany();
+            cancelIndustry();
+        }
+    </script>
+</body>
+
+</html>
