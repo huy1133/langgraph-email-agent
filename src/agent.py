@@ -3,15 +3,16 @@ LangGraph Agent Definition for Email RAG System.
 Includes nodes for retrieving context, drafting, evaluating, and rewriting.
 """
 import json
+import logging
 from typing import TypedDict, Any, List
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
-import chromadb
-from chromadb.utils import embedding_functions
 
 from src.llm_env import load_llm_env
-from src.ingest_from_text import _ROOT
+from src.chroma_client import get_chroma_collection
+
+logger = logging.getLogger(__name__)
 
 class AgentState(TypedDict):
     user_inputs: dict
@@ -28,45 +29,40 @@ llm_chat = ChatOpenAI(
     model=env.chat_model,
     api_key=env.api_key,
     base_url=env.base_url,
-    temperature=0.7 
+    temperature=0.7,
+    timeout=30,
+    max_retries=2,
 )
 
 llm_critic = ChatOpenAI(
     model=env.chat_model,
     api_key=env.api_key,
     base_url=env.base_url,
-    temperature=0.0 
+    temperature=0.0,
+    timeout=30,
+    max_retries=2,
 )
 
 def retrieve_node(state: AgentState):
     contact_id = state["user_inputs"].get("contact_id", -1)
-    
-    chroma_path = _ROOT / "chroma_data"
-    emb_kwargs = {"api_key": env.api_key, "model_name": env.embedding_model}
-    if env.base_url:
-        emb_kwargs["api_base"] = env.base_url
-        
-    ef = embedding_functions.OpenAIEmbeddingFunction(**emb_kwargs)
-    client = chromadb.PersistentClient(path=str(chroma_path))
-    collection = client.get_or_create_collection(name="email_chunks", embedding_function=ef)
-    
     goal = state["user_inputs"].get("goal", "")
-    
+
     history_text = ""
-    # Chỉ load từ db nếu contact_id hợp lệ
+    # Chỉ query ChromaDB nếu contact_id hợp lệ
     if contact_id != -1:
         try:
+            collection = get_chroma_collection(env)
             results = collection.query(
                 query_texts=[goal],
                 n_results=3,
-                where={"contact_id": int(contact_id)}
+                where={"contact_id": int(contact_id)},
             )
             if results and results.get("documents") and results["documents"][0]:
                 history_text = "\n\n---\n\n".join(results["documents"][0])
         except Exception as e:
-            print(f"Error querying ChromaDB: {e}")
+            logger.error("Lỗi khi query ChromaDB: %s", e)
             history_text = ""
-            
+
     return {"email_history": history_text, "iterations": state.get("iterations", 0)}
 
 def draft_node(state: AgentState):

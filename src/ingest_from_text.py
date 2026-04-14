@@ -43,6 +43,8 @@ except ImportError as e:
     print("Thiếu thư viện. Chạy: pip install -r requirements.txt", file=sys.stderr)
     raise e
 
+from .chroma_client import get_chroma_collection
+
 def init_sqlite_db(db_path: Path) -> sqlite3.Connection:
     """Tạo 1 bảng duy nhất lưu trữ Cả 3 thông tin"""
     conn = sqlite3.connect(db_path)
@@ -187,14 +189,7 @@ def run_ingest_process(raw_text: str, source_name: str, max_tokens: int = 500, c
     if not all_docs:
         return {"error": "Hoàn tất nhưng không có mảnh vector nào được tạo.", "logs": logs}
 
-    chroma_path = _ROOT / "chroma_data"
-    emb_kwargs = {"api_key": env.api_key, "model_name": env.embedding_model}
-    if env.base_url:
-        emb_kwargs["api_base"] = env.base_url
-        
-    ef = embedding_functions.OpenAIEmbeddingFunction(**emb_kwargs)
-    client = chromadb.PersistentClient(path=str(chroma_path))
-    collection = client.get_or_create_collection(name=collection_name, embedding_function=ef)
+    collection = get_chroma_collection(env, collection_name=collection_name)
     collection.upsert(documents=all_docs, ids=all_ids, metadatas=all_meta)
 
     logs.append(f"✅ Hoàn tất lưu Master SQL Data.")
@@ -300,13 +295,7 @@ def main() -> None:
     chroma_path = _ROOT / "chroma_data"
     chroma_path.mkdir(parents=True, exist_ok=True)
 
-    emb_kwargs: dict = {"api_key": env.api_key, "model_name": env.embedding_model}
-    if env.base_url:
-        emb_kwargs["api_base"] = env.base_url
-        
-    ef = embedding_functions.OpenAIEmbeddingFunction(**emb_kwargs)
-    client = chromadb.PersistentClient(path=str(chroma_path))
-    collection = client.get_or_create_collection(name=args.collection, embedding_function=ef)
+    collection = get_chroma_collection(env, collection_name=args.collection)
     collection.upsert(documents=all_docs, ids=all_ids, metadatas=all_meta)
 
     print(f"\nThành công! Đã tách dữ liệu vào 1 bảng:")

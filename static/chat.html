@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="vi" class="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -97,7 +97,7 @@
         </div>
 
         <div class="p-4 flex flex-col gap-1 items-stretch">
-            <p class="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest px-2 mb-2">Menu</p>
+            <p class="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest px-2 mb-2">Điều hướng</p>
 
             <a href="/"
                 class="flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 transition">
@@ -105,7 +105,7 @@
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"></path>
                 </svg>
-                Agent Console
+                Bảng Điều Khiển
             </a>
 
             <a href="/ingest"
@@ -116,13 +116,35 @@
                         d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z">
                     </path>
                 </svg>
-                Context & Data
+                Ngữ Cảnh & Dữ Liệu
             </a>
         </div>
 
-        <div class="mt-auto p-6 text-xs text-zinc-500 dark:text-zinc-600">
-            LLM: <span class="text-zinc-700 dark:text-zinc-400">gemini-3-flash</span><br>
-            DB: <span class="text-zinc-700 dark:text-zinc-400">Chroma Vector</span>
+        <!-- Bảng trạng thái hữu ích -->
+        <div class="mt-auto p-4 m-4 bg-zinc-100 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/60 rounded-xl transition-all">
+            <p class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3">Trạng thái hệ thống</p>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] text-zinc-500">Kết nối</span>
+                    <span class="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        Trực tuyến
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] text-zinc-500">Tri thức</span>
+                    <span id="contactCountBadge" class="text-[11px] font-medium text-zinc-700 dark:text-zinc-300">Đang tải...</span>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800/40">
+                <a href="/docs/WEB_PORTAL_GUIDE.md" target="_blank" class="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 flex items-center gap-1 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    Xem hướng dẫn sử dụng
+                </a>
+            </div>
         </div>
     </aside>
 
@@ -131,11 +153,11 @@
         <!-- Top header area for context -->
         <header
             class="h-14 border-b border-zinc-200 dark:border-zinc-800/60 flex items-center justify-between px-6 shrink-0 transition-colors">
-            <span class="font-medium text-zinc-900 dark:text-zinc-100 text-[13px]">Workspace / Chat</span>
+            <span class="font-medium text-zinc-900 dark:text-zinc-100 text-[13px]">Giao diện / Hội thoại</span>
             <div class="flex items-center gap-4">
                 <button onclick="toggleTheme()"
                     class="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition p-1.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 outline-none"
-                    title="Toggle Theme">
+                    title="Đổi giao diện">
                     <!-- Sun Icon (Visible in Dark Mode) -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
@@ -158,7 +180,7 @@
                     </svg>
                 </button>
                 <button class="text-[12px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 transition"
-                    onclick="clearChat()">Clear chat</button>
+                    onclick="clearChat()">Xóa hội thoại</button>
             </div>
         </header>
 
@@ -166,11 +188,11 @@
         <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar max-w-4xl mx-auto w-full" id="chatMessages">
             <div class="flex flex-col items-start mb-2 mt-4">
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="text-[11px] font-semibold text-zinc-500">SYSTEM AI</span>
+                    <span class="text-[11px] font-semibold text-zinc-500">Trợ lý AI</span>
                 </div>
                 <div
                     class="text-[13px] text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 rounded-xl rounded-tl-sm px-4 py-3 max-w-[85%] leading-relaxed shadow-sm dark:shadow-none">
-                    System initialized. How can I help you extract or synthesize information from the Vector store?
+                    Hệ thống đã sẵn sàng. Hãy chọn khách hàng và nhập yêu cầu để tạo email chuyên nghiệp.
                 </div>
             </div>
         </div>
@@ -178,7 +200,7 @@
         <!-- Typing Indicator -->
         <div id="typingIndicator" class="px-6 pb-2 hidden shrink-0 max-w-4xl mx-auto w-full">
             <div class="flex items-center gap-2">
-                <span class="text-[11px] font-semibold text-zinc-500">SYSTEM AI</span>
+                <span class="text-[11px] font-semibold text-zinc-500">Trợ lý AI</span>
             </div>
             <div
                 class="bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 px-4 py-3 rounded-xl rounded-tl-sm inline-flex items-center mt-1">
@@ -315,7 +337,7 @@
             </div>
 
             <form onsubmit="sendChat(event)" class="relative flex items-center">
-                <input type="text" id="chatInput" placeholder="Ask the LLM directly..."
+                <input type="text" id="chatInput" placeholder="Nhập yêu cầu email của bạn..."
                     class="w-full bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-4 pr-12 py-3 text-[13px] text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500 transition-colors shadow-sm dark:shadow-none placeholder-zinc-400 dark:placeholder-zinc-600"
                     autocomplete="off">
                 <button type="submit"
@@ -334,6 +356,21 @@
         let globalContacts = [];
         let conversationHistory = []; // [{role: "user", content:"..."}, {role: "assistant", content:"..."}]
 
+        // --- Bảo mật XSS ---
+        // Escape tất cả ký tự đặc biệt HTML trước khi render vào DOM
+        function escapeHtml(str) {
+            if (str == null) return '';
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(String(str)));
+            return div.innerHTML;
+        }
+
+        // Dùng cho draft email: escape trước, sau đó mới chuyển \n → <br>
+        // Đảm bảo không có tag HTML nào từ LLM bị thực thi
+        function safeDraftHtml(str) {
+            return escapeHtml(str).replace(/\n/g, '<br>');
+        }
+
         async function loadContacts() {
             try {
                 const res = await fetch('/api/contacts');
@@ -346,6 +383,9 @@
 
                 const companies = new Set();
                 const industries = new Set();
+                
+                // Cập nhật bộ đếm khách hàng
+                document.getElementById('contactCountBadge').textContent = `${data.length} khách hàng`;
 
                 data.forEach(c => {
                     const opt = document.createElement('option');
@@ -579,7 +619,7 @@
                 formArea.classList.add('hidden');
             }
 
-            const contextHtml = `Gửi email cho: <strong class="text-zinc-700 dark:text-zinc-300">${finalName}</strong> (${finalCompany} - ${finalIndustry})`;
+            const contextHtml = `Gửi email cho: <strong class="text-zinc-700 dark:text-zinc-300">${escapeHtml(finalName)}</strong> (${escapeHtml(finalCompany)} - ${escapeHtml(finalIndustry)})`;
             appendUserMsg(text, contextHtml);
             input.value = '';
 
@@ -655,11 +695,11 @@
             const html = `
                 <div class="flex flex-col items-end mb-4 mt-4">
                     <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[11px] font-medium text-zinc-500">YOU</span>
+                        <span class="text-[11px] font-medium text-zinc-500">BẠN</span>
                     </div>
                     ${contextDiv}
                     <div class="text-[13px] bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-950 px-4 py-3 rounded-xl rounded-tr-sm max-w-[85%] leading-relaxed shadow-sm dark:shadow-none">
-                        ${text}
+                        ${escapeHtml(text)}
                     </div>
                 </div>
             `;
@@ -672,10 +712,10 @@
             const html = `
                 <div class="flex flex-col items-start mb-4 mt-4">
                     <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[11px] font-semibold text-zinc-500">SYSTEM AI</span>
+                        <span class="text-[11px] font-semibold text-zinc-500">Trợ lý AI</span>
                     </div>
                     <div class="text-[13px] text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 px-4 py-3 rounded-xl rounded-tl-sm max-w-[85%] leading-relaxed shadow-sm dark:shadow-none">
-                        ${text}
+                        ${escapeHtml(text)}
                     </div>
                 </div>
             `;
@@ -685,12 +725,13 @@
 
         function appendDraftMsg(data, contactInfo) {
             const chatBox = document.getElementById('chatMessages');
-            const draftHtml = data.draft.replace(/\n/g, '<br>');
+            // safeDraftHtml: escape HTML entities trước, rồi mới chuyển newline → <br>
+            const draftHtml = safeDraftHtml(data.draft);
             const msgId = 'draft_' + Date.now();
 
             let feedbackBadge = '';
             if (data.feedback && data.feedback.trim() !== '') {
-                feedbackBadge = `<div class="mt-3 text-[11.5px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1.5 rounded-md">Lưu ý kiểm duyệt: ${data.feedback}</div>`;
+                feedbackBadge = `<div class="mt-3 text-[11.5px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1.5 rounded-md">Lưu ý kiểm duyệt: ${escapeHtml(data.feedback)}</div>`;
             }
 
             // Mã hóa draft để truyền qua data attribute an toàn
@@ -700,7 +741,7 @@
             const html = `
                 <div class="flex flex-col items-start mb-4 mt-4" id="${msgId}">
                     <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[11px] font-semibold text-zinc-500">SYSTEM AI</span>
+                        <span class="text-[11px] font-semibold text-zinc-500">Trợ lý AI</span>
                         <span class="text-[10px] text-zinc-400">${data.iterations} vòng tối ưu</span>
                     </div>
                     <div class="text-[13px] text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 px-4 py-3 rounded-xl rounded-tl-sm max-w-[85%] leading-relaxed shadow-sm dark:shadow-none">

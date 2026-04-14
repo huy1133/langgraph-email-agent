@@ -3,13 +3,13 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import logging
 import sys
 import io
 import os
+import asyncio
 import sqlite3
 from pathlib import Path
-import chromadb
-from chromadb.utils import embedding_functions
 
 # Import script modules
 from src.ingest_from_text import (
@@ -21,6 +21,15 @@ from src.ingest_from_text import (
     load_llm_env,
     run_ingest_process
 )
+from src.chroma_client import get_chroma_collection
+
+# Logging được cấu hình ở đây để mọi module con sử dụng
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 if isinstance(sys.stdout, io.TextIOWrapper):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -70,6 +79,7 @@ async def chat_page():
 async def api_contacts():
     sql_db_path = _ROOT / "data" / "customers.db"
     if not sql_db_path.exists():
+        logger.warning("/api/contacts: file DB chưa tồn tại tại %s", sql_db_path)
         return []
     try:
         conn = sqlite3.connect(sql_db_path)
@@ -77,22 +87,22 @@ async def api_contacts():
         cursor.execute("SELECT id, name, company, industry FROM contacts ORDER BY name ASC")
         rows = cursor.fetchall()
         conn.close()
-        
-        contacts = []
-        for r in rows:
-            contacts.append({
-                "id": r[0],
-                "name": r[1],
-                "company": r[2],
-                "industry": r[3]
-            })
+
+        contacts = [
+            {"id": r[0], "name": r[1], "company": r[2], "industry": r[3]}
+            for r in rows
+        ]
         return contacts
+    except sqlite3.Error as e:
+        logger.error("/api/contacts: Lỗi SQLite: %s", e)
+        return JSONResponse(status_code=500, content={"error": "Không thể đọc danh sách liên hệ."})
     except Exception as e:
-        return []
+        logger.exception("/api/contacts: Lỗi không xác định")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.post("/api/ingest")
 async def api_ingest(payload: IngestRequest):
-    result = run_ingest_process(payload.raw_text, source_name="Web UI Paste")
+    result = await asyncio.to_thread(run_ingest_process, payload.raw_text, "Web UI Paste")
     if "error" in result:
         return JSONResponse(status_code=400, content=result)
     return result
@@ -105,7 +115,7 @@ async def api_ingest_file(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": "Không thể đọc file text.", "logs": [str(e)]})
         
-    result = run_ingest_process(raw_text, source_name=file.filename)
+    result = await asyncio.to_thread(run_ingest_process, raw_text, file.filename)
     if "error" in result:
         return JSONResponse(status_code=400, content=result)
     return result
@@ -131,8 +141,9 @@ async def api_generate_draft(payload: DraftRequest):
             "iterations": 0,
             "chat_history": payload.chat_history
         }
-        
-        final_state = email_agent_app.invoke(initial_state)
+
+        # Chạy trong thread pool để không block async event loop
+        final_state = await asyncio.to_thread(email_agent_app.invoke, initial_state)
         return {
             "draft": final_state.get("current_draft", ""),
             "feedback": final_state.get("feedback", ""),
@@ -150,17 +161,12 @@ class SaveRequest(BaseModel):
 
 @app.post("/api/save_to_knowledge")
 async def api_save_to_knowledge(payload: SaveRequest):
-    from src.ingest_from_text import chunk_by_tokens, stable_chunk_id, _ROOT
-    from src.llm_env import load_llm_env
-    import chromadb
-    from chromadb.utils import embedding_functions
-
     env = load_llm_env()
     if not env.api_key:
         return JSONResponse(status_code=400, content={"error": "Thiếu LLM_API_KEY"})
 
-    try:
-        # Bổ sung semantic prefix để vector search chuẩn
+    def _save_sync():
+        """Tách phần sync (embedding + upsert ChromaDB) ra thread pool."""
         semantic_prefix = (
             f"Tên khách hàng: {payload.name}\n"
             f"Công ty: {payload.company}\n"
@@ -175,18 +181,16 @@ async def api_save_to_knowledge(payload: SaveRequest):
             all_ids.append(cid)
             all_meta.append({"contact_id": payload.contact_id, "source_file": "saved_from_chat"})
 
-        chroma_path = _ROOT / "chroma_data"
-        emb_kwargs = {"api_key": env.api_key, "model_name": env.embedding_model}
-        if env.base_url:
-            emb_kwargs["api_base"] = env.base_url
-
-        ef = embedding_functions.OpenAIEmbeddingFunction(**emb_kwargs)
-        client = chromadb.PersistentClient(path=str(chroma_path))
-        collection = client.get_or_create_collection(name="email_chunks", embedding_function=ef)
+        collection = get_chroma_collection(env)
         collection.upsert(documents=all_docs, ids=all_ids, metadatas=all_meta)
+        logger.info("Lưu %d chunk vào ChromaDB (contact_id=%d)", len(all_docs), payload.contact_id)
+        return len(all_docs)
 
-        return {"status": "success", "chunks": len(all_docs)}
+    try:
+        num_chunks = await asyncio.to_thread(_save_sync)
+        return {"status": "success", "chunks": num_chunks}
     except Exception as e:
+        logger.exception("/api/save_to_knowledge: Lỗi khi lưu")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 if __name__ == "__main__":
