@@ -195,4 +195,6 @@ async def api_save_to_knowledge(payload: SaveRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("src.web_app:app", host="127.0.0.1", port=8000, reload=True)
+    # Vô hiệu hóa tính năng lặp lại (restart) khi file Database (sqlite/chromadb) bị sửa đổi, 
+    # Tắt hạt nhân watchfiles bằng reload=False để tuyệt đối không bị đơ UI giữa chừng!
+    uvicorn.run("src.web_app:app", host="127.0.0.1", port=8000, reload=False)

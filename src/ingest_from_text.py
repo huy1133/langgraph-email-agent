@@ -64,7 +64,8 @@ def init_sqlite_db(db_path: Path) -> sqlite3.Connection:
 
 def extract_emails_via_llm(raw_text: str, env) -> list[Dict[str, Any]]:
     """Dùng LLM để rút trích danh sách email/metadata từ văn bản thô."""
-    client = openai.Client(api_key=env.api_key, base_url=env.base_url)
+    import openai
+    client = openai.OpenAI(api_key=env.api_key, base_url=env.base_url, timeout=45.0)
     
     system_prompt = '''Bạn là một trợ lý phân tích dữ liệu email.
     Nhiệm vụ của bạn là đọc một đoạn văn bản thô, nhận diện và tách từng email/tin nhắn/ghi chú riêng biệt có trong đó.
@@ -133,15 +134,25 @@ def stable_chunk_id(chunk_index: int, text: str) -> str:
     h = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
     return f"chk_{chunk_index}_{h}"
 
+import logging
+logger = logging.getLogger(__name__)
+
 def run_ingest_process(raw_text: str, source_name: str, max_tokens: int = 500, collection_name: str = "email_chunks") -> dict:
     """Xử lý text, trích xuất và lưu vào DB (dùng chung cho Web API và các nguồn khác)."""
     env = load_llm_env()
     if not env.api_key:
         return {"error": "Thiếu LLM_API_KEY ở .env"}
 
+    logger.info("=== BẮT ĐẦU TIẾN TRÌNH NẠP DỮ LIỆU TỪ WEB UI ===")
+    logger.info("Đang gọi AI (LLM) để bóc tách tệp thô, vui lòng đợi (có thể mất 10-30s tùy độ dài)...")
+    
     extracted_emails = extract_emails_via_llm(raw_text, env)
+    
     if not extracted_emails:
+        logger.warning("LLM không tìm thấy email nào hoặc lỗi phản hồi.")
         return {"error": "Nội dung rỗng hoặc LLM không tìm thấy email nào.", "logs": []}
+
+    logger.info(f"✅ AI đã bóc tách thành công {len(extracted_emails)} đối tượng khách hàng.")
 
     sql_db_path = _ROOT / "data" / "customers.db"
     if not sql_db_path.parent.exists():
@@ -156,10 +167,13 @@ def run_ingest_process(raw_text: str, source_name: str, max_tokens: int = 500, c
     chunk_counter = 0
     logs = []
     
+    logger.info("Đang ghi tên khách hàng vào SQLite và băm nhỏ (chunking) chữ...")
     for idx, extracted in enumerate(extracted_emails, 1):
         c_name = str(extracted.get("name", "Unknown")).strip()
         c_comp = str(extracted.get("company", "Unknown")).strip()
         c_indus = str(extracted.get("industry", "Unknown")).strip()
+        
+        logger.info(f" - Xử lý Email {idx}/{len(extracted_emails)}: {c_name} ({c_comp})")
         
         cursor.execute("INSERT OR IGNORE INTO contacts (name, company, industry) VALUES (?, ?, ?)", (c_name, c_comp, c_indus))
         cursor.execute("SELECT id FROM contacts WHERE name=? AND company=? AND industry=?", (c_name, c_comp, c_indus))
@@ -187,10 +201,15 @@ def run_ingest_process(raw_text: str, source_name: str, max_tokens: int = 500, c
     sql_conn.close()
 
     if not all_docs:
+        logger.warning("Không có text nào để làm vector.")
         return {"error": "Hoàn tất nhưng không có mảnh vector nào được tạo.", "logs": logs}
 
+    logger.info(f"Nạp {len(all_docs)} Vector chunks lên máy chủ ChromaDB. Có thể mất một chút thời gian xử lý Embedding nhúng...")
+    
     collection = get_chroma_collection(env, collection_name=collection_name)
     collection.upsert(documents=all_docs, ids=all_ids, metadatas=all_meta)
+
+    logger.info("✅ HOÀN TẤT GIAI ĐOẠN NẠP DỮ LIỆU CHROMA DATA THÀNH CÔNG! SẴN SÀNG SỬ DỤNG.")
 
     logs.append(f"✅ Hoàn tất lưu Master SQL Data.")
     logs.append(f"✅ Hoàn tất nạp {len(all_docs)} Vector Chunk vào ChromaDB ({collection_name}).")
